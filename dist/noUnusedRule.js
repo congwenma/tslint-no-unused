@@ -1,7 +1,4 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -9,10 +6,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const typescript_1 = __importDefault(require("typescript"));
-const Lint = __importStar(require("tslint"));
 const path = __importStar(require("path"));
+const Lint = __importStar(require("tslint"));
+const typescript_1 = __importDefault(require("typescript"));
 class LintLanguageServiceHost {
     constructor(sourceFile) {
         this.sourceFile = sourceFile;
@@ -48,11 +48,26 @@ class Rule extends Lint.Rules.AbstractRule {
     mkRuleFailure(sourceFile, diag) {
         return new Lint.RuleFailure(sourceFile, diag.start, diag.start + diag.length, this.parseDiagnosticMessage(diag.messageText), this.ruleName);
     }
+    constructor(options) {
+        super(options);
+        const { ruleArguments: [{ 'ignore-pattern': ignorePattern }] } = options;
+        if (ignorePattern) {
+            this.ignorePattern = [].concat(ignorePattern).map(str => new RegExp(str));
+        }
+    }
     apply(sourceFile) {
         const service = typescript_1.default.createLanguageService(new LintLanguageServiceHost(sourceFile));
         const diagnostics = service.getSuggestionDiagnostics(sourceFile.fileName);
         return diagnostics
             .filter(diag => {
+            // TODO: skip _ prefix
+            if (typeof diag.messageText === 'string') {
+                var tmp;
+                const varName = (tmp = diag.messageText.match(/'(\w*)'/)) && tmp[1];
+                if (this.ignorePattern && this.ignorePattern.some(patt => patt.test(varName))) {
+                    return false;
+                }
+            }
             return (
             // See https://github.com/Microsoft/TypeScript/blob/v2.9.2/src/compiler/diagnosticMessages.json
             // for error code descriptions

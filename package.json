@@ -15,7 +15,8 @@
     "clean": "rm -rf dist",
     "build": "npm run -s clean && tsc",
     "test": "tslint -r ./dist --test test/rules/*/*",
-    "prepublishOnly": "npm run -s build"
+    "prepublishOnly": "npm run -s build",
+    "start": "tslint -c ./test/rules/no-unused/default/tslint.json -r ./dist ./test/rules/*/*"
   },
   "peerDependencies": {
     "tslint": "^5.10.0",

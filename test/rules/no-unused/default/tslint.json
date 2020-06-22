@@ -1,5 +1,9 @@
 {
   "rules": {
-    "no-unused": true
+    "no-unused": [true,
+      {
+        "ignore-pattern": ["^f", "^_"]
+      }
+    ]
   }
 }

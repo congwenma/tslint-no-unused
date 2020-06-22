@@ -1,6 +1,6 @@
-import ts from "typescript"
-import * as Lint from "tslint"
-import * as path from "path"
+import * as path from 'path';
+import * as Lint from 'tslint';
+import ts from 'typescript';
 
 class LintLanguageServiceHost implements ts.LanguageServiceHost {
 
@@ -51,6 +51,16 @@ export class Rule extends Lint.Rules.AbstractRule {
     )
   }
 
+  private ignorePattern: RegExp[]
+  constructor(options) {
+    super(options)
+
+    const { ruleArguments: [{ 'ignore-pattern': ignorePattern }] } = options
+    if(ignorePattern) {
+      this.ignorePattern = [].concat(ignorePattern).map(str => new RegExp(str));
+    }
+  }
+
   apply(
     sourceFile: ts.SourceFile,
   ): Lint.RuleFailure[] {
@@ -58,6 +68,16 @@ export class Rule extends Lint.Rules.AbstractRule {
     const diagnostics = service.getSuggestionDiagnostics(sourceFile.fileName)
     return diagnostics
       .filter(diag => {
+        // TODO: skip _ prefix
+        if (typeof diag.messageText === 'string') {
+          var tmp;
+          const varName = (tmp = diag.messageText.match(/'(\w*)'/)) && tmp[1]
+
+          if (this.ignorePattern && this.ignorePattern.some(patt => patt.test(varName))) {
+            return false
+          }
+        }
+
         return (
           // See https://github.com/Microsoft/TypeScript/blob/v2.9.2/src/compiler/diagnosticMessages.json
           // for error code descriptions
